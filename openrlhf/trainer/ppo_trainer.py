@@ -14,7 +14,6 @@ from openrlhf.models.utils import masked_mean
 from openrlhf.utils.distributed_sampler import DistributedSampler
 
 from .ppo_utils import AdaptiveKLController, Experience, FixedKLController, NaiveExperienceMaker, NaiveReplayBuffer
-from ..utils.save_utils import TimeCallback
 
 
 class PPOTrainer(ABC):
@@ -89,7 +88,6 @@ class PPOTrainer(ABC):
         reward_fn: Callable[[List[torch.Tensor]], torch.Tensor] = None,
         save_hf_ckpt: bool = False,
         disable_ds_ckpt: bool = False,
-        save_time_interval: str = "",
         **generate_kwargs,
     ) -> None:
         assert (
@@ -129,7 +127,6 @@ class PPOTrainer(ABC):
         self.actor_loss_fn = PolicyLoss(eps_clip)
         self.critic_loss_fn = ValueLoss(value_clip)
         self.ptx_loss_fn = GPTLMLoss()
-        self.time_callback = TimeCallback(save_time_interval) if save_time_interval else None
 
         self.freezing_actor_steps = getattr(self.args, "freezing_actor_steps", -1)
 
@@ -502,7 +499,7 @@ class PPOTrainer(ABC):
             pass
         # save ckpt
         # TODO: save best model on dev, use loss/perplexity/others on whole dev dataset as metric
-        if (global_step % args.save_steps == 0) or (self.time_callback and self.time_callback.time_reached()):
+        if global_step % args.save_steps == 0:
             tag = f"global_step{global_step}"
             self._save_checkpoint(args, tag, client_states)
 

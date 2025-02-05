@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from openrlhf.models import GPTLMLoss
 from openrlhf.utils.distributed_sampler import DistributedSampler
-from openrlhf.utils.save_utils import TimeCallback
 
 
 class SFTTrainer(ABC):
@@ -44,7 +43,6 @@ class SFTTrainer(ABC):
         max_epochs: int = 2,
         tokenizer=None,
         save_hf_ckpt: bool = False,
-        save_time_interval: str = "",
         disable_ds_ckpt: bool = False,
     ) -> None:
         super().__init__()
@@ -62,7 +60,6 @@ class SFTTrainer(ABC):
         self.args = strategy.args
         self.save_hf_ckpt = save_hf_ckpt
         self.disable_ds_ckpt = disable_ds_ckpt
-        self.time_callback = TimeCallback(save_time_interval) if save_time_interval else None
 
         self.loss_fn = GPTLMLoss(ring_attn_group=self.strategy.ring_attn_group)
 
@@ -238,7 +235,7 @@ class SFTTrainer(ABC):
 
         # save ckpt
         # TODO: save best model on dev, use loss/perplexity on whole dev dataset as metric
-        if (global_step % args.save_steps == 0) or (self.time_callback and self.time_callback.time_reached()):
+        if global_step % args.save_steps == 0:
             tag = f"global_step{global_step}"
             if not self.disable_ds_ckpt:
                 self.strategy.save_ckpt(

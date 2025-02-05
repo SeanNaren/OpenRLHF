@@ -45,8 +45,11 @@ class PromptDataset(Dataset):
             apply_chat_template = self.tokenizer.apply_chat_template
 
         self.prompts = []
+        self.data = []
         for data in tqdm(dataset, desc="Preprocessing data", disable=not self.strategy.is_rank_0()):
             prompt = preprocess_data(data, input_template, input_key, apply_chat_template)
+            data.pop(input_key)
+            self.data.append(data)
             self.prompts.append(prompt)
 
     def __len__(self):
@@ -54,4 +57,4 @@ class PromptDataset(Dataset):
         return length
 
     def __getitem__(self, idx):
-        return self.prompts[idx]
+        return self.prompts[idx], self.data[idx]
